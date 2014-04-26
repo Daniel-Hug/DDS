@@ -1,0 +1,281 @@
+/*global Obj*/
+
+(function (arrProto) {
+	'use strict';
+
+	function each(arr, fn, scope) {
+		for (var i = 0, l = arr.length; i < l; i++) {
+			fn.call(scope, arr[i], i, arr);
+		}
+	}
+
+	function map(arr, fn, scope) {
+		var l = arr.length, newArr = [];
+		for (var i = 0; i < l; i++) {
+			newArr[i] = fn.call(scope, arr[i], i, arr);
+		}
+		return newArr;
+	}
+
+	// localStorage + JSON wrapper:
+	var storage = {
+		get: function(prop) {
+			return JSON.parse(localStorage.getItem(prop));
+		},
+		set: function(prop, val) {
+			localStorage.setItem(prop, JSON.stringify(val));
+		}
+	};
+
+	// DOM rendering helpers:
+	function removeChilds(parent) {
+		var last;
+		while ((last = parent.lastChild)) parent.removeChild(last);
+	}
+
+	function renderMultiple(arr, renderer, parent, keepOrder) {
+		var renderedEls = map(arr, renderer),
+			docFrag = document.createDocumentFragment(),
+			l = renderedEls.length, i;
+		if (keepOrder) for (i = 0; i < l; i++) docFrag.appendChild(renderedEls[i]);
+		else while (l--) docFrag.appendChild(renderedEls[l]);
+		removeChilds(parent);
+		parent.appendChild(docFrag);
+	}
+
+	// Insert an object into a sorted array of similar objects.
+	// Objects are sorted (least to greatest) by the property passed as the third argument.
+	function sortedIndex(array, objToInsert, key) {
+		var low = 0,
+			high = array.length,
+			value = objToInsert[key];
+
+		while (low < high) {
+			var mid = (low + high) >>> 1;
+			if (value >= array[mid][key]) low = mid + 1;
+			else high = mid;
+		}
+		return low;
+	}
+
+	function appendAtIndex(parent, newChild, index) {
+		var nextSibling = parent.children[index];
+		parent.insertBefore(newChild, nextSibling);
+	}
+
+	// Generate random integer within range
+	function randomInt(min, max) {
+		return Math.floor(Math.random() * (max - min + 1)) + min;
+	}
+
+	// Generate a unique ID
+	var uid = (function(chars) {
+		return function(length) {
+			for (var i = 0, id = ''; i < length; i++) id += chars[randomInt(0,61)];
+			return id;
+		};
+	})('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
+
+	// Add a new element to each parasite:
+	function parasitePush(arr, obj, indexInArr, parasiteNotToUpdate) {
+		each(arr.parasites, function(parasite) {
+			if (parasite === parasiteNotToUpdate) return;
+			if (parasite.filter) {
+				// Update cache of filtered array:
+				parasite.filteredArr = arr.filter(parasite.filter);
+
+				// Don't add if the object gets filtered:
+				if (!parasite.filter(obj)) return;
+			}
+
+			var indexInFilteredArr = parasite.filter ? (parasite.filteredArr || arr).indexOf(obj) : indexInArr;
+			var newElIndex = parasite.keepOrder ? indexInFilteredArr : (parasite.filteredArr || arr).length - 1 - indexInFilteredArr;
+			var newChild = parasite.renderer(obj, indexInArr);
+			appendAtIndex(parasite.parent, newChild, newElIndex);
+		});
+	}
+
+	// Remove an element from a parasite:
+	function parasiteRemove(arr, obj, indexInArr, parasiteNotToUpdate) {
+		each(arr.parasites, function(parasite) {
+			if (parasite === parasiteNotToUpdate) return;
+			var indexInFilteredArr = parasite.filter ?
+				parasite.filteredArr.indexOf(obj) :
+				indexInArr;
+
+			if (indexInFilteredArr === -1) return;
+
+			// remove object from filtered array cache:
+			if (parasite.filteredArr) {
+				parasite.filteredArr.splice(indexInFilteredArr, 1);
+			}
+
+			var elIndex = parasite.keepOrder ?
+				indexInFilteredArr :
+				(parasite.filteredArr || this).length - 1 - indexInFilteredArr;
+			parasite.parent.removeChild(parasite.parent.children[elIndex]);
+		}, arr);
+	}
+
+
+
+	// Bind an array of Data objects to the DOM:
+	window.DDS = function(options) {
+		var arr;
+		if (options.storageID) {
+			arr = storage.get(options.storageID) || (options.fallback ? map(options.fallback, window.DDS.prepObj) : []);
+			this.storageID = options.storageID;
+		}
+		else arr = options.data;
+
+		// Add each object in the array as an indexed item in the this object:
+		arrProto.push.apply(this, arr);
+
+		this.subscribers = [];
+		this.parasites = [];
+		if (options.sortKey) this.sortKey = options.sortKey;
+	};
+
+	window.DDS.prepObj = function(obj) {
+		if (obj.ts === undefined) obj.ts = Date.now();
+		if (obj.id === undefined) obj.id = uid(16);
+		return obj;
+	};
+
+	window.DDS.prototype = {
+		length: 0,
+
+		subscribe: function(fn) {
+			this.subscribers.push(fn);
+		},
+
+		notifySubscribers: function() {
+			each(this.subscribers, function(fn) {
+				fn();
+			});
+		},
+
+		updateStorage: function() {
+			if (this.storageID) storage.set(this.storageID, this.slice());
+		},
+
+		push: function(obj, indexInArr) {
+			var arrLength = this.length;
+			indexInArr = indexInArr !== undefined ? indexInArr :
+				(this.sortKey ? sortedIndex(this, obj, this.sortKey) : arrLength);
+			window.DDS.prepObj(obj);
+			this.splice(indexInArr, 0, obj);
+			this.updateStorage();
+			this.notifySubscribers({push: {
+				object: obj,
+				index: indexInArr
+			}});
+
+			// Add new element to each parasite:
+			parasitePush(this, obj, indexInArr);
+		},
+
+		// re-render any elements that should reflect the model of the object passed:
+		edit: function(obj, whatToChange, parasiteNotToUpdate) {
+			// Update model
+			Obj.set(obj, whatToChange);
+
+			// Update view(s):
+			var curIndexInArr = this.indexOf(obj);
+			var newIndexInArr = this.sortKey ? sortedIndex(this, obj, this.sortKey) : curIndexInArr;
+
+			// Remove old element from each parasite:
+			parasiteRemove(this, obj, curIndexInArr, parasiteNotToUpdate);
+
+			// Change index of object in array
+			if (newIndexInArr !== curIndexInArr) {
+				this.splice(newIndexInArr, 0, this.splice(curIndexInArr, 1));
+			}
+
+			// Add new element back to each parasite:
+			parasitePush(this, obj, newIndexInArr, parasiteNotToUpdate);
+
+			this.updateStorage();
+			this.notifySubscribers({
+				edit: whatToChange,
+				object: obj,
+				oldIndex: curIndexInArr,
+				newIndex: newIndexInArr
+			});
+		},
+
+		remove: function(obj) {
+			Obj.unsubscribe(obj);
+
+			// remove object from host array:
+			var indexInArr = this.indexOf(obj);
+			this.splice(indexInArr, 1);
+
+			// update storage:
+			this.updateStorage();
+			this.notifySubscribers({remove: {
+				object: obj,
+				index: indexInArr
+			}});
+
+			// remove element from each parasite:
+			parasiteRemove(this, obj, indexInArr);
+		},
+
+		find: function(queryObj) {
+			arrLoop:
+			for (var i = 0, l = this.length; i < l; i++) {
+				var dataObj = this[i];
+				for (var key in queryObj) {
+					if (queryObj[key] !== dataObj[key]) continue arrLoop;
+				}
+				return dataObj;
+			}
+		},
+
+
+		/*
+			Render each object in the array as an element, then stick the
+			elements in the parasite's parent element in the order specified.
+		*/
+		attach: function(parasite) {
+			parasite.hostData = this;
+			this.parasites.push(parasite);
+			renderMultiple(this, parasite.renderer, parasite.parent, parasite.keepOrder);
+
+			return parasite;
+		},
+
+		indexOf: arrProto.indexOf,
+		splice: arrProto.splice,
+		filter: arrProto.filter,
+		slice: arrProto.slice
+	};
+
+
+
+	window.Parasite = function(parasite) {
+		this.renderer = parasite.renderer;
+		this.parent = parasite.parent;
+		this.keepOrder = parasite.keepOrder;
+		this.filteredArr = this.hostData;
+	};
+
+	/*
+		Filter which elements are to be rendered:
+		parasite.setFilter(function(person) {
+			return person.age > 50;
+		});
+	*/
+	window.Parasite.prototype.setFilter = function(fn) {
+		this.filter = fn;
+		if (!this.hostData) return;
+		this.filteredArr = this.hostData.filter(this.filter);
+		renderMultiple(this.filteredArr, this.renderer, this.parent, this.keepOrder);
+	};
+
+	window.Parasite.prototype.edit = function(obj, whatToChange) {
+		if (!this.hostData) return;
+		this.hostData.edit(obj, whatToChange, this);
+	};
+})(Array.prototype);
