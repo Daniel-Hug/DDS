@@ -153,9 +153,9 @@
 			this.subscribers.push(fn);
 		},
 
-		notifySubscribers: function() {
+		notifySubscribers: function(obj) {
 			each(this.subscribers, function(fn) {
-				fn();
+				fn(obj);
 			});
 		},
 
