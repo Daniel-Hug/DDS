@@ -92,7 +92,7 @@
 				if (!parasite.filter(obj)) return;
 			}
 
-			var indexInFilteredArr = parasite.filter ? (parasite.filteredArr || arr).indexOf(obj) : indexInArr;
+			var indexInFilteredArr = parasite.filter ? parasite.filteredArr.indexOf(obj) : indexInArr;
 			var newElIndex = parasite.keepOrder ? indexInFilteredArr : (parasite.filteredArr || arr).length - 1 - indexInFilteredArr;
 			var newChild = parasite.renderer(obj, indexInArr);
 			appendAtIndex(parasite.parent, newChild, newElIndex);
@@ -109,6 +109,8 @@
 
 			if (indexInFilteredArr === -1) return;
 
+			var filteredArrLength = (parasite.filteredArr || this).length;
+
 			// remove object from filtered array cache:
 			if (parasite.filteredArr) {
 				parasite.filteredArr.splice(indexInFilteredArr, 1);
@@ -116,7 +118,7 @@
 
 			var elIndex = parasite.keepOrder ?
 				indexInFilteredArr :
-				(parasite.filteredArr || this).length - 1 - indexInFilteredArr;
+				filteredArrLength - 1 - indexInFilteredArr;
 			parasite.parent.removeChild(parasite.parent.children[elIndex]);
 		}, arr);
 	}
@@ -224,18 +226,18 @@
 		remove: function(obj) {
 			if (objSubscribeIsLoaded) Obj.unsubscribe(obj);
 
-			// remove object from host array:
 			var indexInArr = this.indexOf(obj);
+
+			// remove element from each parasite:
+			parasiteRemove(this, obj, indexInArr);
+
+			// remove object from host array:
 			this.splice(indexInArr, 1);
 
-			// update storage:
 			this.notifySubscribers({remove: {
 				object: obj,
 				index: indexInArr
 			}});
-
-			// remove element from each parasite:
-			parasiteRemove(this, obj, indexInArr);
 		},
 
 		find: function(queryObj) {
