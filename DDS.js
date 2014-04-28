@@ -154,6 +154,7 @@
 		},
 
 		notifySubscribers: function(obj) {
+			this.updateStorage();
 			each(this.subscribers, function(fn) {
 				fn(obj);
 			});
@@ -173,7 +174,6 @@
 				(this.sortKey ? sortedIndex(this, obj, this.sortKey) : arrLength);
 			window.DDS.prepObj(obj);
 			this.splice(indexInArr, 0, obj);
-			this.updateStorage();
 			this.notifySubscribers({push: {
 				object: obj,
 				index: indexInArr
@@ -203,7 +203,6 @@
 			// Add new element back to each parasite:
 			parasitePush(this, obj, newIndexInArr, parasiteNotToUpdate);
 
-			this.updateStorage();
 			this.notifySubscribers({
 				edit: whatToChange,
 				object: obj,
@@ -220,7 +219,6 @@
 			this.splice(indexInArr, 1);
 
 			// update storage:
-			this.updateStorage();
 			this.notifySubscribers({remove: {
 				object: obj,
 				index: indexInArr
