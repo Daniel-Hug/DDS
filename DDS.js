@@ -121,6 +121,12 @@
 		}, arr);
 	}
 
+	var objSubscribeIsLoaded = typeof Obj === 'object';
+	var hop = Object.prototype.hasOwnProperty;
+
+	function has(obj, prop) {
+		return hop.call(obj, prop);
+	}
 
 
 	// Bind an array of Data objects to the DOM:
@@ -186,7 +192,11 @@
 		// re-render any elements that should reflect the model of the object passed:
 		edit: function(obj, whatToChange, parasiteNotToUpdate) {
 			// Update model
-			Obj.set(obj, whatToChange);
+			if (objSubscribeIsLoaded) {
+				Obj.set(obj, whatToChange);
+			} else {
+				for (var key in whatToChange) if (has(whatToChange, key)) obj[key] = whatToChange[key];
+			}
 
 			// Update view(s):
 			var curIndexInArr = this.indexOf(obj);
@@ -212,7 +222,7 @@
 		},
 
 		remove: function(obj) {
-			Obj.unsubscribe(obj);
+			if (objSubscribeIsLoaded) Obj.unsubscribe(obj);
 
 			// remove object from host array:
 			var indexInArr = this.indexOf(obj);
