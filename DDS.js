@@ -17,6 +17,10 @@
 		return newArr;
 	}
 
+	function arrayMove(array, from, to) {
+		return array.splice(to, 0, array.splice(from, 1)[0]);
+	}
+
 	// localStorage + JSON wrapper:
 	var storage = {
 		get: function(prop) {
@@ -155,8 +159,12 @@
 			});
 		},
 
+		serialize: function() {
+			return arrProto.slice.call(this);
+		},
+
 		updateStorage: function() {
-			if (this.storageID) storage.set(this.storageID, this.slice());
+			if (this.storageID) storage.set(this.storageID, this.serialize());
 		},
 
 		push: function(obj, indexInArr) {
@@ -189,7 +197,7 @@
 
 			// Change index of object in array
 			if (newIndexInArr !== curIndexInArr) {
-				this.splice(newIndexInArr, 0, this.splice(curIndexInArr, 1));
+				arrayMove(this, curIndexInArr, newIndexInArr);
 			}
 
 			// Add new element back to each parasite:
@@ -248,8 +256,7 @@
 
 		indexOf: arrProto.indexOf,
 		splice: arrProto.splice,
-		filter: arrProto.filter,
-		slice: arrProto.slice
+		filter: arrProto.filter
 	};
 
 
