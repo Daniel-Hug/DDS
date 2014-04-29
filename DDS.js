@@ -149,8 +149,8 @@
 	};
 
 	window.DDS.prepObj = function(obj) {
-		if (obj.ts === undefined) obj.ts = Date.now();
-		if (obj.id === undefined) obj.id = uid(16);
+		if (obj._ts === undefined) obj.ts = Date.now();
+		if (obj._id === undefined) obj.id = uid(16);
 		return obj;
 	};
 
@@ -183,8 +183,7 @@
 			window.DDS.prepObj(obj);
 			this.splice(indexInArr, 0, obj);
 			this.notifySubscribers({push: {
-				object: obj,
-				index: indexInArr
+				object: obj
 			}});
 
 			// Add new element to each parasite:
@@ -193,6 +192,7 @@
 
 		// re-render any elements that should reflect the model of the object passed:
 		edit: function(obj, whatToChange, parasiteNotToUpdate) {
+			obj._lastEdit = Date.now();
 			// Update model
 			if (objSubscribeIsLoaded) {
 				Obj.set(obj, whatToChange);
@@ -207,6 +207,8 @@
 			// Remove old element from each parasite:
 			parasiteRemove(this, obj, curIndexInArr, parasiteNotToUpdate);
 
+			if (obj._isDeleted) return;
+
 			// Change index of object in array
 			if (newIndexInArr !== curIndexInArr) {
 				arrayMove(this, curIndexInArr, newIndexInArr);
@@ -217,27 +219,12 @@
 
 			this.notifySubscribers({
 				edit: whatToChange,
-				object: obj,
-				oldIndex: curIndexInArr,
-				newIndex: newIndexInArr
+				object: obj
 			});
 		},
 
 		remove: function(obj) {
-			if (objSubscribeIsLoaded) Obj.unsubscribe(obj);
-
-			var indexInArr = this.indexOf(obj);
-
-			// remove element from each parasite:
-			parasiteRemove(this, obj, indexInArr);
-
-			// remove object from host array:
-			this.splice(indexInArr, 1);
-
-			this.notifySubscribers({remove: {
-				object: obj,
-				index: indexInArr
-			}});
+			this.edit(obj, {_isDeleted: true});
 		},
 
 		find: function(queryObj) {
@@ -259,7 +246,9 @@
 		attach: function(parasite) {
 			parasite.hostData = this;
 			this.parasites.push(parasite);
-			renderMultiple(this, parasite.renderer, parasite.parent, parasite.keepOrder);
+			renderMultiple(this.filter(function(obj) {
+				return obj._isDeleted !== true;
+			}), parasite.renderer, parasite.parent, parasite.keepOrder);
 
 			return parasite;
 		},
