@@ -149,8 +149,8 @@
 	};
 
 	window.DDS.prepObj = function(obj) {
-		if (obj._ts === undefined) obj.ts = Date.now();
-		if (obj._id === undefined) obj.id = uid(16);
+		if (obj._ts === undefined) obj._ts = Date.now();
+		if (obj._id === undefined) obj._id = uid(16);
 		return obj;
 	};
 
@@ -182,9 +182,9 @@
 				(this.sortKey ? sortedIndex(this, obj, this.sortKey) : arrLength);
 			window.DDS.prepObj(obj);
 			this.splice(indexInArr, 0, obj);
-			this.notifySubscribers({push: {
+			this.notifySubscribers({
 				object: obj
-			}});
+			});
 
 			// Add new element to each parasite:
 			parasitePush(this, obj, indexInArr);
@@ -218,8 +218,8 @@
 			parasitePush(this, obj, newIndexInArr, parasiteNotToUpdate);
 
 			this.notifySubscribers({
-				edit: whatToChange,
-				object: obj
+				object: obj,
+				whatChanged: whatToChange
 			});
 		},
 
