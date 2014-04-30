@@ -209,6 +209,11 @@
 			// Remove old element from each parasite:
 			parasiteRemove(this, obj, curIndexInArr, parasiteNotToUpdate);
 
+			this.notifySubscribers({
+				object: obj,
+				whatChanged: whatToChange
+			});
+
 			if (obj._isDeleted) return;
 
 			// Change index of object in array
@@ -218,11 +223,6 @@
 
 			// Add new element back to each parasite:
 			parasitePush(this, obj, newIndexInArr, parasiteNotToUpdate);
-
-			this.notifySubscribers({
-				object: obj,
-				whatChanged: whatToChange
-			});
 		},
 
 		remove: function(obj) {
