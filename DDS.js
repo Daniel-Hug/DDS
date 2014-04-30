@@ -183,7 +183,7 @@
 			window.DDS.prepObj(obj);
 			this.splice(indexInArr, 0, obj);
 			this.notifySubscribers({
-				object: obj
+				newObj: obj
 			});
 
 			if (obj._isDeleted) return;
@@ -196,6 +196,7 @@
 		edit: function(obj, whatToChange, parasiteNotToUpdate) {
 			obj._lastEdit = Date.now();
 			// Update model
+			var oldObj = Obj.extend(obj);
 			if (objSubscribeIsLoaded) {
 				Obj.set(obj, whatToChange);
 			} else {
@@ -210,8 +211,8 @@
 			parasiteRemove(this, obj, curIndexInArr, parasiteNotToUpdate);
 
 			this.notifySubscribers({
-				object: obj,
-				whatChanged: whatToChange
+				newObj: obj,
+				oldObj: oldObj
 			});
 
 			if (obj._isDeleted) return;
