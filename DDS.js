@@ -182,9 +182,7 @@
 				(this.sortKey ? sortedIndex(this, obj, this.sortKey) : arrLength);
 			window.DDS.prepObj(obj);
 			this.splice(indexInArr, 0, obj);
-			this.notifySubscribers({
-				newObj: obj
-			});
+			this.notifySubscribers(obj);
 
 			if (obj._isDeleted) return;
 
@@ -202,6 +200,7 @@
 			} else {
 				for (var key in whatToChange) if (has(whatToChange, key)) obj[key] = whatToChange[key];
 			}
+			this.notifySubscribers(obj, oldObj);
 
 			// Update view(s):
 			var curIndexInArr = this.indexOf(obj);
@@ -209,11 +208,6 @@
 
 			// Remove old element from each parasite:
 			parasiteRemove(this, obj, curIndexInArr, parasiteNotToUpdate);
-
-			this.notifySubscribers({
-				newObj: obj,
-				oldObj: oldObj
-			});
 
 			if (obj._isDeleted) return;
 
