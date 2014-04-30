@@ -186,6 +186,8 @@
 				object: obj
 			});
 
+			if (obj._isDeleted) return;
+
 			// Add new element to each parasite:
 			parasitePush(this, obj, indexInArr);
 		},
