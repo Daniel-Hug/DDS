@@ -161,10 +161,10 @@
 			this.subscribers.push(fn);
 		},
 
-		notifySubscribers: function(obj) {
+		notifySubscribers: function(newObj, oldObj) {
 			this.updateStorage();
 			each(this.subscribers, function(fn) {
-				fn(obj);
+				fn(newObj, oldObj);
 			});
 		},
 
