@@ -136,7 +136,12 @@
 		// Add each object in the array as an indexed item in the this object:
 		arrProto.push.apply(this, arr);
 
-		this.subscribers = [];
+		this.subscribers = {
+			add: [],
+			remove: [],
+			edit: [],
+			change: []
+		};
 		this.parasites = [];
 		if (options.sortKey) this.sortKey = options.sortKey;
 	};
@@ -150,13 +155,13 @@
 	window.DDS.prototype = {
 		length: 0,
 
-		subscribe: function(fn) {
-			this.subscribers.push(fn);
+		// subscribe to changes:
+		on: function(event, fn) {
+			this.subscribers[event].push(fn);
 		},
 
-		notifySubscribers: function(newObj, oldObj) {
-			this.updateStorage();
-			each(this.subscribers, function(fn) {
+		trigger: function(event, newObj, oldObj) {
+			this.subscribers[event].forEach(function(fn) {
 				fn(newObj, oldObj);
 			});
 		},
@@ -175,9 +180,14 @@
 				(this.sortKey ? sortedIndex(this, obj, this.sortKey) : arrLength);
 			window.DDS.prepObj(obj);
 			this.splice(indexInArr, 0, obj);
-			this.notifySubscribers(obj);
+
+			this.updateStorage();
 
 			if (obj._isDeleted) return;
+
+			// Notify subscribers:
+			this.trigger('add', obj);
+			this.trigger('change', obj);
 
 			// Add new element to each parasite:
 			parasitePush(this, obj, indexInArr);
@@ -189,7 +199,6 @@
 			// Update model
 			var oldObj = Obj.extend(obj);
 			Obj.set(obj, whatToChange);
-			this.notifySubscribers(obj, oldObj);
 
 			// Update view(s):
 			var curIndexInArr = this.indexOf(obj);
@@ -198,7 +207,22 @@
 			// Remove old element from each parasite:
 			parasiteRemove(this, obj, curIndexInArr, parasiteNotToUpdate);
 
-			if (obj._isDeleted) return;
+			this.updateStorage();
+
+			// Notify subscribers:
+			if (obj._isDeleted) {
+				if (oldObj._isDeleted) return;
+				// deleted.
+				this.trigger('remove', obj, oldObj);
+				return;
+			} else if (oldObj._isDeleted) {
+				// un-deleted.
+				this.trigger('add', obj, oldObj);
+			} else {
+				// edited.
+				this.trigger('edit', obj, oldObj);
+			}
+			this.trigger('change', obj, oldObj);
 
 			// Change index of object in array
 			if (newIndexInArr !== curIndexInArr) {
