@@ -123,13 +123,6 @@
 		}, arr);
 	}
 
-	var objSubscribeIsLoaded = typeof Obj === 'object';
-	var hop = Object.prototype.hasOwnProperty;
-
-	function has(obj, prop) {
-		return hop.call(obj, prop);
-	}
-
 
 	// Bind an array of Data objects to the DOM:
 	window.DDS = function(options) {
@@ -195,11 +188,7 @@
 			obj._lastEdit = Date.now();
 			// Update model
 			var oldObj = Obj.extend(obj);
-			if (objSubscribeIsLoaded) {
-				Obj.set(obj, whatToChange);
-			} else {
-				for (var key in whatToChange) if (has(whatToChange, key)) obj[key] = whatToChange[key];
-			}
+			Obj.set(obj, whatToChange);
 			this.notifySubscribers(obj, oldObj);
 
 			// Update view(s):
