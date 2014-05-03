@@ -48,7 +48,7 @@
 			// Allow changes to ToDo title:
 			title.contentEditable = true;
 			on(title, 'input', function() {
-				taskListParasite.edit(window.tasks[i], {title: this.textContent});
+				taskListParasite.edit(taskObj, {title: this.textContent});
 			});
 
 			// Don't toggle checkbox when todo title or delete button is clicked:
@@ -65,7 +65,7 @@
 
 			// Let ToDos be checked off:
 			on(checkbox, 'change', function() {
-				taskListParasite.edit(window.tasks[i], {done: this.checked});
+				taskListParasite.edit(taskObj, {done: this.checked});
 			});
 
 			return li;
