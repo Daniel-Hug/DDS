@@ -93,7 +93,7 @@
 			}
 
 			var indexInFilteredArr = parasite.filter ? parasite.filteredArr.indexOf(obj) : indexInArr;
-			var newElIndex = parasite.keepOrder ? indexInFilteredArr : (parasite.filteredArr || arr).length - 1 - indexInFilteredArr;
+			var newElIndex = parasite.keepOrder ? indexInFilteredArr : parasite.parent.childElementCount - indexInFilteredArr;
 			var newChild = parasite.renderer(obj, indexInArr);
 			appendAtIndex(parasite.parent, newChild, newElIndex);
 		});
@@ -109,8 +109,6 @@
 
 			if (indexInFilteredArr === -1) return;
 
-			var filteredArrLength = (parasite.filteredArr || this).length;
-
 			// remove object from filtered array cache:
 			if (parasite.filteredArr) {
 				parasite.filteredArr.splice(indexInFilteredArr, 1);
@@ -118,7 +116,7 @@
 
 			var elIndex = parasite.keepOrder ?
 				indexInFilteredArr :
-				filteredArrLength - 1 - indexInFilteredArr;
+				parasite.parent.childElementCount - 1 - indexInFilteredArr;
 			parasite.parent.removeChild(parasite.parent.children[elIndex]);
 		}, arr);
 	}
