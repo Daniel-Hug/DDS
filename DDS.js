@@ -65,10 +65,6 @@
 			this.edit(obj, {_isDeleted: true});
 		},
 
-		attach: function(parasite) {
-			this.parasites.push(parasite);
-		},
-
 		select: function(queryObj) {
 			var array = [];
 			loop:
