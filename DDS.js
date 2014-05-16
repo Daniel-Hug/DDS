@@ -31,7 +31,7 @@
 			change: []
 		};
 
-		var array = objects;
+		var array = objects || [];
 		if (Obj.type(objects) === 'object') {
 			array = this.select.call({objects: objects}, {});
 		}
