@@ -1,24 +1,114 @@
-/*global DDS, Parasite */
+/*global DDS, Firebase */
 (function() {
 	'use strict';
 
-	// Pull in ToDo list data from localStorage:
-	window.tasks = new DDS({storageID: 'ToDoList', fallback: [
-		{done: false, title: 'Add tasks to your ToDo list.'},
-		{done: false, title: 'Print them off.'},
-		{done: false, title: "Mark em' off one by one."}
-	]});
 
-	// Helper functions:
+	/*
+		Helper functions
+	*/
 
-	var $ = document.querySelector.bind(document);
+	// Get elements by CSS selector:
+	function qs(selector, scope) {
+		return (scope || document).querySelector(selector);
+	}
+	function qsa(selector, scope) {
+		return (scope || document).querySelectorAll(selector);
+	}
 
 	function on(target, type, callback) {
 		target.addEventListener(type, callback, false);
 	}
 
-	function init(newTaskForm, taskNameField, taskList) {
-		function renderTask(taskObj, i) {
+	// localStorage wrapper:
+	var storage = {
+		get: function(prop) {
+			return JSON.parse(localStorage.getItem(prop));
+		},
+		set: function(prop, val) {
+			localStorage.setItem(prop, JSON.stringify(val));
+		},
+		has: function(prop) {
+			return localStorage.hasOwnProperty(prop);
+		},
+		remove: function(prop) {
+			localStorage.removeItem(prop);
+		},
+		clear: function() {
+			localStorage.clear();
+		}
+	};
+
+
+
+	/*
+		Set up tasks data with localStorage
+	*/
+
+	window.tasks = new DDS(storage.get('tasks') || []);
+
+	window.tasks.on('change', function() {
+		storage.set('tasks', window.tasks.objects);
+	});
+
+
+
+	/*
+		Firebase
+	*/
+
+	var fbTasks = new Firebase('https://js.firebaseio.com/tasks');
+	var fbHasTasks = false;
+
+	fbTasks.on('child_added', function(snapshot) {
+		fbHasTasks = true;
+		var fbObj = snapshot.val();
+		var localObj = window.tasks[fbObj._id];
+
+		if (localObj) {
+			if (fbObj._lastEdit) {
+				if ((localObj._lastEdit && fbObj._lastEdit > localObj._lastEdit) || !localObj._lastEdit) {
+					window.tasks.edit(localObj, fbObj);
+				}
+			}
+		}
+		else window.tasks.add(fbObj);
+	});
+
+	fbTasks.on('child_changed', function(snapshot) {
+		var fbObj = snapshot.val();
+		var localObj = window.tasks.objects[fbObj._id];
+
+		window.tasks.edit(localObj, fbObj);
+	});
+
+	// Update Firebase with new merged data:
+	fbTasks.once('value', function() {
+		if (!fbHasTasks) {
+			[
+				{done: false, title: "Mark em' off one by one."},
+				{done: false, title: 'Print them off.'},
+				{done: false, title: 'Add tasks to your ToDo list.'}
+			].forEach(window.tasks.add, window.tasks);
+		}
+		fbTasks.update(window.tasks.objects);
+	});
+
+	window.tasks.on('change', function(newObj) {
+		fbTasks.child(newObj._id).set(newObj);
+	});
+
+
+
+	/*
+		Create two different todo list views that use the same model
+	*/
+
+	function init(parent) {
+		var newTaskForm = qs(':scope .new-task-form', parent);
+		var taskNameField = qs(':scope .task-name-field', parent);
+		var taskList = qs(':scope .task-list', parent);
+
+		function renderTask(taskObj) {
 			// Create elements:
 			var li = document.createElement('li');
 			var checkbox = document.createElement('input');
@@ -48,7 +138,7 @@
 			// Allow changes to ToDo title:
 			title.contentEditable = true;
 			on(title, 'input', function() {
-				taskListParasite.edit(taskObj, {title: this.textContent});
+				taskListRenderer.edit(taskObj, {title: this.textContent});
 			});
 
 			// Don't toggle checkbox when todo title or delete button is clicked:
@@ -65,30 +155,83 @@
 
 			// Let ToDos be checked off:
 			on(checkbox, 'change', function() {
-				taskListParasite.edit(taskObj, {done: this.checked});
+				window.tasks.edit(taskObj, {done: this.checked});
 			});
 
 			return li;
 		}
 
 
-		var taskListParasite = new Parasite({
+		var taskListRenderer = window.tasks.render({
 			renderer: renderTask,
-			parent: taskList
+			parent: taskList,
+			requiredKeys: ['done', 'title']
 		});
-
-		window.tasks.attach(taskListParasite);
 
 
 		// add task
 		on(newTaskForm, 'submit', function(event) {
 			event.preventDefault();
-			window.tasks.push({done: false, title: taskNameField.value});
+			window.tasks.add({done: false, title: taskNameField.value});
 			taskNameField.value = '';
+		});
+
+
+
+		/*
+			Filtering
+		*/
+
+		var filters = {
+			all: function() {
+				return true;
+			},
+			checked: function(task) {
+				return task.done;
+			},
+			unchecked: function(task) {
+				return !task.done;
+			}
+		};
+
+		var filterBtns = qsa(':scope .filter-btns button', parent);
+		[].forEach.call(filterBtns, function(btn) {
+			on(btn, 'click', function() {
+				[].forEach.call(filterBtns, function(btn) {
+					btn.classList.remove('active');
+				});
+				taskListRenderer.filter(filters[this.textContent]);
+				this.classList.add('active');
+			});
+		});
+
+
+
+		/*
+			Sorting
+		*/
+
+		var sorters = {
+			newFirst: function(array) {
+				return array.reverse();
+			},
+			newLast: function(array) {
+				return array;
+			}
+		};
+
+		var sortBtns = qsa(':scope .sort-btns button', parent);
+		[].forEach.call(sortBtns, function(btn) {
+			on(btn, 'click', function() {
+				[].forEach.call(sortBtns, function(btn) {
+					btn.classList.remove('active');
+				});
+				taskListRenderer.sort(sorters[this.className]);
+				this.classList.add('active');
+			});
 		});
 	}
 
-	init($('.left  .new-task-form'), $('.left  .task-name-field'), $('.left  .task-list'));
-	init($('.right .new-task-form'), $('.right .task-name-field'), $('.right .task-list'));
+	[qs('.left'), qs('.right')].forEach(init);
 
 })();

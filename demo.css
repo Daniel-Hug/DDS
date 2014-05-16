@@ -73,6 +73,16 @@ input[type=checkbox]:focus {
 	outline: 0;
 }
 
+button.active {
+	background: black;
+	color: white;
+}
+
+button.active:hover,
+button.active:focus {
+	background: hsl(192, 100%, 43%);
+}
+
 button .icon {
 	font-size: 2.2em;
 	line-height: .98em;
