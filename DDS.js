@@ -82,6 +82,12 @@
 		on: function(event, fn) {
 			this.subscribers[event].push(fn);
 		},
+		whenever: function(event, fn) {
+			this.on(event, fn);
+			if (event === 'add' || event === 'change') {
+				for (var _id in this.objects) fn(this.objects[_id]);
+			}
+		},
 
 		trigger: function(event, newObj, oldObj, DDSRendererNotToUpdate) {
 			this.subscribers[event].concat(this.subscribers.change).forEach(function(fn) {
