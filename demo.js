@@ -85,16 +85,16 @@
 	fbTasks.once('value', function() {
 		if (!fbHasTasks) {
 			[
-				{done: false, title: "Mark em' off one by one."},
+				{done: false, title: 'Mark em\' off one by one.'},
 				{done: false, title: 'Print them off.'},
 				{done: false, title: 'Add tasks to your ToDo list.'}
 			].forEach(window.tasks.add, window.tasks);
 		}
 		fbTasks.update(window.tasks.objects);
-	});
 
-	window.tasks.on('change', function(newObj) {
-		fbTasks.child(newObj._id).set(newObj);
+		window.tasks.on('change', function(newObj) {
+			fbTasks.child(newObj._id).set(newObj);
+		});
 	});
 
 
