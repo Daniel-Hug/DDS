@@ -46,7 +46,7 @@
 
 	window.tasks = new DDS(storage.get('tasks') || []);
 
-	window.tasks.on('change', function() {
+	window.tasks.on('any', function() {
 		storage.set('tasks', window.tasks.objects);
 	});
 
@@ -92,7 +92,7 @@
 		}
 		fbTasks.update(window.tasks.objects);
 
-		window.tasks.on('change', function(newObj) {
+		window.tasks.on('any', function(event, newObj) {
 			fbTasks.child(newObj._id).set(newObj);
 		});
 	});
@@ -162,11 +162,11 @@
 		}
 
 
-		var taskListRenderer = window.tasks.render({
+		var taskListRenderer = window.tasks.render(new DDS.DOMRenderer({
 			renderer: renderTask,
 			parent: taskList,
 			requiredKeys: ['done', 'title']
-		});
+		}));
 
 
 		// add task
@@ -230,8 +230,10 @@
 				this.classList.add('active');
 			});
 		});
+
+		return taskListRenderer;
 	}
 
-	[qs('.left'), qs('.right')].forEach(init);
+	window.renderers = [qs('.left'), qs('.right')].map(init);
 
 })();

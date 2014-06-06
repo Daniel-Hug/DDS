@@ -1,5 +1,12 @@
-/*global Obj */
-(function () {
+(function (root, factory) {
+    if (typeof define === 'function' && define.amd) {
+        // AMD. Register as an anonymous module.
+        define(['object-subscribe', 'subscribable.js'], factory);
+    } else {
+        // Browser globals
+        root.DDS = factory(root.Obj, root.Subscribable);
+    }
+})(this, function(Obj, Subscribable) {
 	'use strict';
 
 	function pad(n, width, z) {
@@ -22,14 +29,9 @@
 	}
 
 	// Bind an array of Data objects to the DOM:
-	window.DDS = function(objects) {
+	var DDS = function(objects) {
+		Obj.extend(new Subscribable(), this);
 		this.objects = {};
-		this.subscribers = {
-			add: [],
-			remove: [],
-			edit: [],
-			change: []
-		};
 
 		var array = objects || [];
 		if (Obj.type(objects) === 'object') {
@@ -38,7 +40,15 @@
 		array.forEach(this.add, this);
 	};
 
-	window.DDS.prototype = {
+	DDS.prototype = new Subscribable();
+	Obj.extend({
+		whenever: function(event, fn) {
+			if (event === 'add' || event === 'any') {
+				for (var _id in this.objects) fn(this.objects[_id]);
+			}
+			this.on(event, fn);
+		},
+
 		add: function(obj) {
 			obj._id = obj._id || chronUID();
 			if (this.objects[obj._id]) return;
@@ -78,43 +88,27 @@
 			return array;
 		},
 
-		// subscribe to changes:
-		on: function(event, fn) {
-			this.subscribers[event].push(fn);
-		},
-		whenever: function(event, fn) {
-			this.on(event, fn);
-			if (event === 'add' || event === 'change') {
-				for (var _id in this.objects) fn(this.objects[_id]);
-			}
-		},
-
-		trigger: function(event, newObj, oldObj, DDSRendererNotToUpdate) {
-			this.subscribers[event].concat(this.subscribers.change).forEach(function(fn) {
-				fn(newObj, oldObj, event, DDSRendererNotToUpdate);
-			});
-		},
-
 		// Keep DOM updated with latest data, return renderer
-		render: function(options) {
-			options.dds = this;
-			var DOMRenderer = new window.DDS.DOMRenderer(options);
-			DOMRenderer.refresh();
+		render: function(Renderer) {
+			Renderer.dds = this;
+			Renderer.refresh();
 
-			// keep views updated:
-			this.on('change', DOMRenderer.render.bind(DOMRenderer));
+			// keep view updated:
+			this.on('add edit remove', Renderer.render.bind(Renderer));
 
-			return DOMRenderer;
+			return Renderer;
 		}
-	};
+	}, DDS.prototype);
 
 
-	window.DDS.DOMRenderer = function(options) {
-		this.renderer = options.renderer;
-		this.parent = options.parent;
-		this.dds = options.dds;
+
+
+
+
+	DDS.Renderer = function(options) {
+		options = options || {};
+		Obj.extend(new Subscribable(), this);
 		this.requiredKeys = options.requiredKeys;
-		this.elements = {};
 		this.sorter = options.sort || function(array) {
 			return array.reverse();
 		};
@@ -123,12 +117,83 @@
 		};
 	};
 
-	window.DDS.DOMRenderer.prototype = {
+	// These are the base methods of DDS.Renderer instances.
+	// Usable DDS Renderers should extend the base DDS.Renderer with the following methods:
+	// add(obj, index), remove(obj._id), refresh(), sort(fn)
+	DDS.Renderer.prototype = new Subscribable();
+	Obj.extend({
+		render: function(action, newObj, oldObj, DDSRendererNotToUpdate) {
+			if (this === DDSRendererNotToUpdate) return;
+			var isEdit = action === 'edit';
+
+			// On edit, only update view if a required key changed
+			// while loop (labeled "w") only runs once
+			w:
+			while (isEdit && this.requiredKeys && this.requiredKeys.length) {
+				for (var i = 0, l = this.requiredKeys.length; i < l; i++) {
+					var key = this.requiredKeys[i];
+					if (newObj[key] !== oldObj[key]) break w;
+				}
+				return;
+			}
+
+			if (isEdit || action === 'remove') {
+				this.remove(newObj._id);
+				this.trigger('remove');
+			}
+			if (isEdit || action === 'add') {
+				if (!this.filterer(newObj)) return;
+				this.add(newObj, this.getArray().indexOf(newObj));
+				this.trigger('add');
+			}
+		},
+
+		getArray: function() {
+			var nonDeletedArr = this.dds.select({_isDeleted: undefined});
+			return this.sorter(nonDeletedArr.filter(this.filterer));
+		},
+
+		filter: function(fn) {
+			this.filterer = fn;
+
+			// refresh view:
+			var nonDeletedArr = this.dds.select({_isDeleted: undefined});
+			var displayArray = this.sorter(nonDeletedArr.filter(this.filterer));
+
+			nonDeletedArr.forEach(function(object) {
+				var elIndex = displayArray.indexOf(object);
+				if (elIndex >= 0) {
+					this.add(object, elIndex);
+				} else {
+					this.remove(object._id);
+				}
+			}, this);
+		},
+
+		edit: function(obj, changes) {
+			this.dds.edit(obj, changes, this);
+		}
+	}, DDS.Renderer.prototype);
+
+
+
+
+
+	DDS.DOMRenderer = function(options) {
+		Obj.extend(new DDS.Renderer(options), this);
+		this.renderer = options.renderer;
+		this.parent = options.parent;
+		this.elements = {};
+	};
+
+	DDS.DOMRenderer.prototype = new DDS.Renderer();
+	Obj.extend({
 		elFromObject: function(object) {
 			return (this.elements[object._id] = this.renderer(object));
 		},
 
 		add: function(object, elIndex) {
+			if (this.elements[object._id]) return;
 			appendAtIndex(this.parent, this.elFromObject(object), elIndex);
 		},
 
@@ -146,30 +211,6 @@
 			Obj.reset(this.elements);
 		},
 
-		render: function(newObj, oldObj, action, DDSRendererNotToUpdate) {
-			if (this === DDSRendererNotToUpdate) return;
-
-			// On edit, only update view if a required key changed:
-			w:
-			while (action === 'edit' && this.requiredKeys && this.requiredKeys.length) {
-				for (var i = 0, l = this.requiredKeys.length; i < l; i++) {
-					var key = this.requiredKeys[i];
-					if (newObj[key] !== oldObj[key]) break w;
-				}
-				return;
-			}
-
-			if (action !== 'add') { // if edit / remove action:
-				// remove old element:
-				this.remove(newObj._id);
-			}
-			if (action !== 'remove') { // if edit / add action:
-				// render element from newObj and append at proper index:
-				if (!this.filterer(newObj)) return;
-				this.add(newObj, this.getArray().indexOf(newObj));
-			}
-		},
-
 		renderMultiple: function(array) {
 			var renderedEls = array.map(this.elFromObject, this);
 			var docFrag = document.createDocumentFragment();
@@ -178,32 +219,9 @@
 			this.parent.appendChild(docFrag);
 		},
 
-		getArray: function() {
-			var nonDeletedArr = this.dds.select({_isDeleted: undefined});
-			return this.sorter(nonDeletedArr.filter(this.filterer));
-		},
-
 		refresh: function() {
 			this.emptyParent();
 			this.renderMultiple(this.getArray());
-		},
-
-		filter: function(fn) {
-			this.filterer = fn;
-
-			// refresh view:
-			var nonDeletedArr = this.dds.select({_isDeleted: undefined});
-			var displayArray = this.sorter(nonDeletedArr.filter(this.filterer));
-
-			nonDeletedArr.forEach(function(object) {
-				var elIndex = displayArray.indexOf(object);
-				if (elIndex >= 0) {
-					if (this.elements[object._id]) return;
-					this.add(object, elIndex);
-				} else {
-					this.remove(object._id);
-				}
-			}, this);
 		},
 
 		sort: function(fn) {
@@ -213,10 +231,8 @@
 			this.getArray().forEach(function(object) {
 				this.parent.appendChild(this.parent.removeChild(this.elements[object._id]));
 			}, this);
-		},
-
-		edit: function(obj, changes) {
-			this.dds.edit(obj, changes, this);
 		}
-	};
-})();
+	}, DDS.DOMRenderer.prototype);
+
+	return DDS;
+});
