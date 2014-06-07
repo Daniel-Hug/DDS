@@ -139,13 +139,12 @@
 
 			if (isEdit || action === 'remove') {
 				this.remove(newObj._id);
-				this.trigger('remove');
 			}
 			if (isEdit || action === 'add') {
 				if (!this.filterer(newObj)) return;
 				this.add(newObj, this.getArray().indexOf(newObj));
-				this.trigger('add');
 			}
+			this.trigger(action);
 		},
 
 		getArray: function() {
@@ -168,6 +167,7 @@
 					this.remove(object._id);
 				}
 			}, this);
+			this.trigger('filter');
 		},
 
 		edit: function(obj, changes) {
@@ -231,6 +231,7 @@
 			this.getArray().forEach(function(object) {
 				this.parent.appendChild(this.parent.removeChild(this.elements[object._id]));
 			}, this);
+			this.trigger('sort');
 		}
 	}, DDS.DOMRenderer.prototype);
 
