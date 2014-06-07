@@ -44,7 +44,7 @@
 	Obj.extend({
 		whenever: function(event, fn) {
 			if (event === 'add' || event === 'any') {
-				for (var _id in this.objects) fn(this.objects[_id]);
+				for (var _id in this.objects) fn(event, this.objects[_id]);
 			}
 			this.on(event, fn);
 		},
