@@ -62,7 +62,7 @@
 	fbTasks.on('child_added', function(snapshot) {
 		fbHasTasks = true;
 		var fbObj = snapshot.val();
-		var localObj = window.tasks[fbObj._id];
+		var localObj = window.tasks.find({_id: fbObj._id});
 
 		if (localObj) {
 			if (fbObj._lastEdit) {

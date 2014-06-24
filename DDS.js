@@ -1,4 +1,6 @@
+/*global define */
 (function (root, factory) {
+	'use strict';
     if (typeof define === 'function' && define.amd) {
         // AMD. Register as an anonymous module.
         define(['object-subscribe', 'subscribable.js'], factory);
@@ -31,13 +33,9 @@
 	// Bind an array of Data objects to the DOM:
 	var DDS = function(objects) {
 		Obj.extend(new Subscribable(), this);
-		this.objects = {};
+		this.objects = [];
 
-		var array = objects || [];
-		if (Obj.type(objects) === 'object') {
-			array = this.select.call({objects: objects}, {});
-		}
-		array.forEach(this.add, this);
+		(objects || []).forEach(this.add, this);
 	};
 
 	DDS.prototype = new Subscribable();
@@ -50,10 +48,12 @@
 		},
 
 		add: function(obj) {
-			obj._id = obj._id || chronUID();
-			if (this.objects[obj._id]) return;
+			if (obj._id === undefined) {
+				obj._id = chronUID();
+			}
+			else if ( this.find({_id: obj._id}) ) return;
 			if (obj._ts === undefined) obj._ts = Date.now();
-			this.objects[obj._id] = obj;
+			this.objects.push(obj);
 
 			// Notify subscribers:
 			if (!obj._isDeleted) {
@@ -75,17 +75,31 @@
 			this.edit(obj, {_isDeleted: true});
 		},
 
-		select: function(queryObj) {
+		findAll: function(queryObj) {
 			var array = [];
-			loop:
-			for (var _id in this.objects) {
-				var dataObj = this.objects[_id];
+			this.objects.forEach(function(dataObj) {
 				for (var key in queryObj) {
-					if (queryObj[key] !== dataObj[key]) continue loop;
+					if (queryObj[key] !== dataObj[key]) return;
 				}
 				array.push(dataObj);
-			}
+			});
 			return array;
+		},
+
+		find: function(queryObj) {
+			var numObjects = this.objects.length;
+			search:
+			for (var i = 0; i < numObjects; i++) {
+				var dataObj = this.objects[i];
+				for (var key in queryObj) {
+					if (queryObj[key] !== dataObj[key]) continue search;
+				}
+				return dataObj;
+			}
+		},
+
+		nonDeleted: function() {
+			return this.findAll({_isDeleted: undefined});
 		},
 
 		// Keep DOM updated with latest data, return renderer
@@ -148,7 +162,7 @@
 		},
 
 		getArray: function() {
-			var nonDeletedArr = this.dds.select({_isDeleted: undefined});
+			var nonDeletedArr = this.dds.nonDeleted();
 			return this.sorter(nonDeletedArr.filter(this.filterer));
 		},
 
@@ -156,7 +170,7 @@
 			this.filterer = fn;
 
 			// refresh view:
-			var nonDeletedArr = this.dds.select({_isDeleted: undefined});
+			var nonDeletedArr = this.dds.nonDeleted();
 			var displayArray = this.sorter(nonDeletedArr.filter(this.filterer));
 
 			nonDeletedArr.forEach(function(object) {
