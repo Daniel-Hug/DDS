@@ -22,7 +22,7 @@
 
 	// Bind an array of Data objects to the DOM:
 	var DDS = function(objects) {
-		Obj.extend(new Subscribable(), this);
+		this.subscribers = {};
 		this.objects = [];
 
 		(objects || []).forEach(this.add, this);
@@ -111,7 +111,7 @@
 
 	DDS.Renderer = function(options) {
 		options = options || {};
-		Obj.extend(new Subscribable(), this);
+		this.subscribers = {};
 		this.requiredKeys = options.requiredKeys;
 		this.sorter = options.sort || function(array) {
 			return array.reverse();
