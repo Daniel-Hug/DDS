@@ -11,18 +11,8 @@
 })(this, function(Obj, Subscribable) {
 	'use strict';
 
-	function pad(n, width, z) {
-		z = z || '0';
-		n = n + '';
-		return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
-	}
-
 	function uid() {
 		return (+(Math.random() + '00').slice(2)).toString(36);
-	}
-
-	function chronUID() {
-		return pad(Date.now().toString(36), 9) + '_' + uid();
 	}
 
 	function appendAtIndex(parent, newChild, index) {
@@ -49,7 +39,7 @@
 
 		add: function(obj) {
 			if (obj._id === undefined) {
-				obj._id = chronUID();
+				obj._id = uid();
 			}
 			else if ( this.find({_id: obj._id}) ) return;
 			if (obj._ts === undefined) obj._ts = Date.now();
