@@ -26,6 +26,6 @@
   ],
   "dependencies": {
     "object-subscribe": "~2.2.2",
-    "subscribable.js": "2.0.0"
+    "subscribable.js": "2.0.1"
   }
 }
