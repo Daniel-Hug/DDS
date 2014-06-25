@@ -93,14 +93,15 @@
 		},
 
 		// Keep DOM updated with latest data, return renderer
-		render: function(Renderer) {
-			Renderer.dds = this;
-			Renderer.refresh();
+		render: function(renderer) {
+			renderer.dds = this;
+			renderer.refreshModel();
+			renderer.refresh();
 
 			// keep view updated:
-			this.on('add edit remove', Renderer.render.bind(Renderer));
+			this.on('add edit remove', renderer.render.bind(renderer));
 
-			return Renderer;
+			return renderer;
 		}
 	}, DDS.prototype);
 
@@ -111,6 +112,7 @@
 
 	DDS.Renderer = function(options) {
 		options = options || {};
+		this.objects = [];
 		this.subscribers = {};
 		this.requiredKeys = options.requiredKeys;
 		this.sorter = options.sort || function(array) {
@@ -126,17 +128,21 @@
 	// add(obj, index), remove(obj._id), refresh(), sort(fn)
 	DDS.Renderer.prototype = new Subscribable();
 	Obj.extend({
+		refreshModel: function() {
+			this.objects = this.sorter(this.dds.nonDeleted().filter(this.filterer));
+		},
+
 		render: function(action, newObj, oldObj, DDSRendererNotToUpdate) {
+			this.refreshModel();
 			if (this === DDSRendererNotToUpdate) return;
 			var isEdit = action === 'edit';
 
 			// On edit, only update view if a required key changed
-			// while loop (labeled "w") only runs once
-			w:
-			while (isEdit && this.requiredKeys && this.requiredKeys.length) {
+			objDiff:
+			if (isEdit && this.requiredKeys && this.requiredKeys.length) {
 				for (var i = 0, l = this.requiredKeys.length; i < l; i++) {
 					var key = this.requiredKeys[i];
-					if (newObj[key] !== oldObj[key]) break w;
+					if (newObj[key] !== oldObj[key]) break objDiff;
 				}
 				return;
 			}
@@ -146,14 +152,9 @@
 			}
 			if (isEdit || action === 'add') {
 				if (!this.filterer(newObj)) return;
-				this.add(newObj, this.getArray().indexOf(newObj));
+				this.add(newObj, this.objects.indexOf(newObj));
 			}
 			this.trigger(action);
-		},
-
-		getArray: function() {
-			var nonDeletedArr = this.dds.nonDeleted();
-			return this.sorter(nonDeletedArr.filter(this.filterer));
 		},
 
 		filter: function(fn) {
@@ -215,8 +216,8 @@
 			Obj.reset(this.elements);
 		},
 
-		renderMultiple: function(array) {
-			var renderedEls = array.map(this.elFromObject, this);
+		renderMultiple: function(array, renderer) {
+			var renderedEls = array.map(renderer || this.elFromObject, this);
 			var docFrag = document.createDocumentFragment();
 			var numEls = renderedEls.length;
 			for (var i = 0; i < numEls; i++) docFrag.appendChild(renderedEls[i]);
@@ -225,16 +226,15 @@
 
 		refresh: function() {
 			this.emptyParent();
-			this.renderMultiple(this.getArray());
+			this.renderMultiple(this.objects);
 		},
 
 		sort: function(fn) {
 			this.sorter = fn;
-
-			// reorder elements, Fix: this may not be the most efficient method:
-			this.getArray().forEach(function(object) {
-				this.parent.appendChild(this.parent.removeChild(this.elements[object._id]));
-			}, this);
+			this.objects = this.sorter(this.objects);
+			this.renderMultiple(this.objects, function(object) {
+				return this.parent.removeChild(this.elements[object._id]);
+			});
 			this.trigger('sort');
 		}
 	}, DDS.DOMRenderer.prototype);

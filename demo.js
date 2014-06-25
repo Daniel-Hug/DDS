@@ -57,10 +57,8 @@
 	*/
 
 	var fbTasks = new Firebase('https://js.firebaseio.com/tasks');
-	var fbHasTasks = false;
 
 	fbTasks.on('child_added', function(snapshot) {
-		fbHasTasks = true;
 		var fbObj = snapshot.val();
 		var localObj = window.tasks.find({_id: fbObj._id});
 
@@ -76,22 +74,29 @@
 
 	fbTasks.on('child_changed', function(snapshot) {
 		var fbObj = snapshot.val();
-		var localObj = window.tasks.objects[fbObj._id];
+		var localObj = window.tasks.find({_id: fbObj._id});
 
 		window.tasks.edit(localObj, fbObj);
 	});
 
-	// Update Firebase with new merged data:
 	fbTasks.once('value', function() {
-		if (!fbHasTasks) {
+		// Add some default tasks if none exist:
+		if (!window.tasks.objects.length) {
 			[
 				{done: false, title: 'Mark em\' off one by one.'},
 				{done: false, title: 'Print them off.'},
 				{done: false, title: 'Add tasks to your ToDo list.'}
 			].forEach(window.tasks.add, window.tasks);
 		}
-		fbTasks.update(window.tasks.objects);
 
+		// Update Firebase with new merged data:
+		var objectified = {};
+		window.tasks.objects.forEach(function(object) {
+			objectified[object._id] = object;
+		});
+		fbTasks.update(objectified);
+
+		// update Firebase when local model changes:
 		window.tasks.on('any', function(event, newObj) {
 			fbTasks.child(newObj._id).set(newObj);
 		});
@@ -213,10 +218,14 @@
 
 		var sorters = {
 			newFirst: function(array) {
-				return array.reverse();
+				return array.sort(function(objectA, objectB) {
+					return objectA._ts - objectB._ts;
+				});
 			},
 			newLast: function(array) {
-				return array;
+				return array.sort(function(objectA, objectB) {
+					return objectB._ts - objectA._ts;
+				});
 			}
 		};
 
