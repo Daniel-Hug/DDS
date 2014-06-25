@@ -91,7 +91,7 @@
 		// Keep DOM updated with latest data, return renderer
 		render: function(renderer) {
 			renderer.dds = this;
-			this.objects = renderer.getModel();
+			renderer.objects = renderer.getModel();
 			renderer.refresh();
 
 			// keep view updated:
@@ -106,7 +106,6 @@
 
 	DDS.Renderer = function(options) {
 		options = options || {};
-		this.objects = [];
 		this.subscribers = {};
 		this.requiredKeys = options.requiredKeys;
 		this.sorter = options.sort || function(array) {
@@ -155,19 +154,24 @@
 		filter: function(fn) {
 			this.filterer = fn;
 
-			// refresh view:
+			// grab new view model:
 			var newViewModel = this.getModel();
 
+			// remove old objects from view if they're not in new model
 			this.objects.forEach(function(object) {
-				var elIndex = newViewModel.indexOf(object);
-				if (elIndex >= 0) {
-					this.add(object, elIndex);
-				} else {
+				if (newViewModel.indexOf(object) < 0) {
 					this.remove(object._id);
 				}
 			}, this);
 
+			// update model
 			this.objects = newViewModel;
+
+			// add new objects in model to view
+			this.objects.forEach(function(object, index) {
+				this.add(object, index);
+			}, this);
+
 			this.trigger('filter');
 		},
 
