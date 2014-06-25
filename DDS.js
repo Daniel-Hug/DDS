@@ -88,14 +88,10 @@
 			}
 		},
 
-		nonDeleted: function() {
-			return this.findAll({_isDeleted: undefined});
-		},
-
 		// Keep DOM updated with latest data, return renderer
 		render: function(renderer) {
 			renderer.dds = this;
-			renderer.refreshModel();
+			this.objects = renderer.getModel();
 			renderer.refresh();
 
 			// keep view updated:
@@ -104,8 +100,6 @@
 			return renderer;
 		}
 	}, DDS.prototype);
-
-
 
 
 
@@ -128,12 +122,13 @@
 	// add(obj, index), remove(obj._id), refresh(), sort(fn)
 	DDS.Renderer.prototype = new Subscribable();
 	Obj.extend({
-		refreshModel: function() {
-			this.objects = this.sorter(this.dds.nonDeleted().filter(this.filterer));
+		getModel: function() {
+			var nonDeleted = this.dds.findAll({_isDeleted: undefined});
+			return this.sorter(nonDeleted.filter(this.filterer));
 		},
 
 		render: function(action, newObj, oldObj, DDSRendererNotToUpdate) {
-			this.refreshModel();
+			this.objects = this.getModel();
 			if (this === DDSRendererNotToUpdate) return;
 			var isEdit = action === 'edit';
 
@@ -161,17 +156,18 @@
 			this.filterer = fn;
 
 			// refresh view:
-			var nonDeletedArr = this.dds.nonDeleted();
-			var displayArray = this.sorter(nonDeletedArr.filter(this.filterer));
+			var newViewModel = this.getModel();
 
-			nonDeletedArr.forEach(function(object) {
-				var elIndex = displayArray.indexOf(object);
+			this.objects.forEach(function(object) {
+				var elIndex = newViewModel.indexOf(object);
 				if (elIndex >= 0) {
 					this.add(object, elIndex);
 				} else {
 					this.remove(object._id);
 				}
 			}, this);
+
+			this.objects = newViewModel;
 			this.trigger('filter');
 		},
 
@@ -179,7 +175,6 @@
 			this.dds.edit(obj, changes, this);
 		}
 	}, DDS.Renderer.prototype);
-
 
 
 
