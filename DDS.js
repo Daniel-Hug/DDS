@@ -88,16 +88,16 @@
 			}
 		},
 
-		// Keep DOM updated with latest data, return renderer
-		render: function(renderer) {
-			renderer.dds = this;
-			renderer.objects = renderer.getModel();
-			renderer.refresh();
+		// Keep DOM updated with latest data, return passed view
+		render: function(view) {
+			view.dds = this;
+			view.objects = view.getModel();
+			view.refresh();
 
 			// keep view updated:
-			this.on('add edit remove', renderer.render.bind(renderer));
+			this.on('add edit remove', view.render.bind(view));
 
-			return renderer;
+			return view;
 		}
 	}, DDS.prototype);
 
