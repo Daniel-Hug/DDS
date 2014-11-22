@@ -143,7 +143,7 @@
 			// Allow changes to ToDo title:
 			title.contentEditable = true;
 			on(title, 'input', function() {
-				taskListRenderer.edit(taskObj, {title: this.textContent});
+				taskListView.edit(taskObj, {title: this.textContent});
 			});
 
 			// Don't toggle checkbox when todo title or delete button is clicked:
@@ -167,7 +167,7 @@
 		}
 
 
-		var taskListRenderer = window.tasks.render(new DDS.DOMRenderer({
+		var taskListView = window.tasks.render(new DDS.DOMView({
 			renderer: renderTask,
 			parent: taskList,
 			requiredKeys: ['done', 'title']
@@ -205,7 +205,7 @@
 				[].forEach.call(filterBtns, function(btn) {
 					btn.classList.remove('active');
 				});
-				taskListRenderer.filter(filters[this.textContent]);
+				taskListView.filter(filters[this.textContent]);
 				this.classList.add('active');
 			});
 		});
@@ -235,14 +235,14 @@
 				[].forEach.call(sortBtns, function(btn) {
 					btn.classList.remove('active');
 				});
-				taskListRenderer.sort(sorters[this.className]);
+				taskListView.sort(sorters[this.className]);
 				this.classList.add('active');
 			});
 		});
 
-		return taskListRenderer;
+		return taskListView;
 	}
 
-	window.renderers = [qs('.left'), qs('.right')].map(init);
+	window.views = [qs('.left'), qs('.right')].map(init);
 
 })();

@@ -104,7 +104,7 @@
 
 
 
-	DDS.Renderer = function(options) {
+	DDS.View = function(options) {
 		options = options || {};
 		this.subscribers = {};
 		this.requiredKeys = options.requiredKeys;
@@ -116,19 +116,19 @@
 		};
 	};
 
-	// These are the base methods of DDS.Renderer instances.
-	// Usable DDS Renderers should extend the base DDS.Renderer with the following methods:
+	// These are the base methods of DDS.View instances.
+	// Usable DDS Views should extend the base DDS.View with the following methods:
 	// add(obj, index), remove(obj._id), refresh(), sort(fn)
-	DDS.Renderer.prototype = new Subscribable();
+	DDS.View.prototype = new Subscribable();
 	Obj.extend({
 		getModel: function() {
 			var nonDeleted = this.dds.findAll({_isDeleted: undefined});
 			return this.sorter(nonDeleted.filter(this.filterer));
 		},
 
-		render: function(action, newObj, oldObj, DDSRendererNotToUpdate) {
+		render: function(action, newObj, oldObj, DDSViewNotToUpdate) {
 			this.objects = this.getModel();
-			if (this === DDSRendererNotToUpdate) return;
+			if (this === DDSViewNotToUpdate) return;
 			var isEdit = action === 'edit';
 
 			// On edit, only update view if a required key changed
@@ -178,19 +178,19 @@
 		edit: function(obj, changes) {
 			this.dds.edit(obj, changes, this);
 		}
-	}, DDS.Renderer.prototype);
+	}, DDS.View.prototype);
 
 
 
 
-	DDS.DOMRenderer = function(options) {
-		Obj.extend(new DDS.Renderer(options), this);
+	DDS.DOMView = function(options) {
+		Obj.extend(new DDS.View(options), this);
 		this.renderer = options.renderer;
 		this.parent = options.parent;
 		this.elements = {};
 	};
 
-	DDS.DOMRenderer.prototype = new DDS.Renderer();
+	DDS.DOMView.prototype = new DDS.View();
 	Obj.extend({
 		elFromObject: function(object) {
 			return (this.elements[object._id] = this.renderer(object));
@@ -236,7 +236,7 @@
 			});
 			this.trigger('sort');
 		}
-	}, DDS.DOMRenderer.prototype);
+	}, DDS.DOMView.prototype);
 
 	return DDS;
 });
