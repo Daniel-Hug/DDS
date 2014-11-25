@@ -116,9 +116,10 @@
 		};
 	};
 
-	// These are the base methods of DDS.View instances.
-	// Usable DDS Views should extend the base DDS.View with the following methods:
-	// add(obj, index), remove(obj._id), refresh()
+	// Usable DDS Views (e.g., see DDS.DOMView below)
+	// should extend DDS.View and add, at minimum, a `refresh` method.
+	// For increased performance, include the following methods as well:
+	// add(obj, index), remove(obj._id), and sort(fn)
 	DDS.View.prototype = new Subscribable();
 	Obj.extend({
 		getModel: function() {
@@ -141,36 +142,54 @@
 				return;
 			}
 
+			// determine wether view will need to perform an 'add' and/or a 'remove' operation
 			if (isEdit || action === 'remove') {
-				this.remove(newObj._id);
+				var shouldRemove = true;
 			}
 			if (isEdit || action === 'add') {
 				if (!this.filterer(newObj)) return;
-				this.add(newObj, this.objects.indexOf(newObj));
+				var shouldAdd = true;
 			}
+
+			// perform any needed add or remove operations on view
+			// use view.refresh if view doesn't have a needed remove/add method
+			if (shouldRemove && !this.remove || shouldAdd && !this.add) {
+				this.refresh()
+			} else {
+				if (shouldRemove) {
+					this.remove(newObj._id);
+				}
+				if (shouldAdd) {
+					this.add(newObj, this.objects.indexOf(newObj));
+				}
+			}
+
 			this.trigger(action);
 		},
 
 		filter: function(fn) {
 			this.filterer = fn;
 
-			// grab new view model:
-			var newViewModel = this.getModel();
+			if (this.add && this.remove) {
+				// grab new view model:
+				var newViewModel = this.getModel();
 
-			// remove old objects from view if they're not in new model
-			this.objects.forEach(function(object) {
-				if (newViewModel.indexOf(object) < 0) {
-					this.remove(object._id);
-				}
-			}, this);
+				// remove old objects from view if they're not in new model
+				this.objects.forEach(function(object) {
+					if (newViewModel.indexOf(object) < 0) {
+						this.remove(object._id);
+					}
+				}, this);
 
-			// update model
-			this.objects = newViewModel;
+				// update model
+				this.objects = newViewModel;
 
-			// add new objects in model to view
-			this.objects.forEach(function(object, index) {
-				this.add(object, index);
-			}, this);
+				// add new objects in model to view
+				this.objects.forEach(function(object, index) {
+					this.add(object, index);
+				}, this);
+			}
+			else this.refresh();
 
 			this.trigger('filter');
 		},
