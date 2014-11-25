@@ -118,7 +118,7 @@
 
 	// These are the base methods of DDS.View instances.
 	// Usable DDS Views should extend the base DDS.View with the following methods:
-	// add(obj, index), remove(obj._id), refresh(), sort(fn)
+	// add(obj, index), remove(obj._id), refresh()
 	DDS.View.prototype = new Subscribable();
 	Obj.extend({
 		getModel: function() {
