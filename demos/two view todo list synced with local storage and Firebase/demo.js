@@ -83,7 +83,7 @@
 		// Add some default tasks if none exist:
 		if (!window.tasks.objects.length) {
 			[
-				{done: false, title: 'Mark em\' off one by one.'},
+				{done: false, title: 'Mark \'em off one by one.'},
 				{done: false, title: 'Print them off.'},
 				{done: false, title: 'Add tasks to your ToDo list.'}
 			].forEach(window.tasks.add, window.tasks);
