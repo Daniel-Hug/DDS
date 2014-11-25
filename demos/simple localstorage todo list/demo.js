@@ -26,7 +26,7 @@
 
 
 	/*
-		Create two different todo list views that use the same model
+		Setup todo list view
 	*/
 
 	var parent = qs('.app');
@@ -70,11 +70,10 @@
 
 
 	// add task
-	on(newTaskForm, 'submit', function(event) {
-		event.preventDefault();
+	on(newTaskForm, 'submit', instead(function() {
 		tasks.add({done: false, title: taskNameField.value});
 		taskNameField.value = '';
-	});
+	}));
 
 
 
