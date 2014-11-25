@@ -32,6 +32,8 @@ var storage = {
 
 
 function instead(fn) {
-	event.preventDefault();
-	fn.apply(this, arguments);
+	return function(event) {
+		event.preventDefault();
+		fn.apply(this, arguments);
+	};
 }
