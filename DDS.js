@@ -107,6 +107,11 @@
 	DDS.View = function(options) {
 		options = options || {};
 		this.subscribers = {};
+
+		// these are set when the `render` method of a DDS instance is called passing this view:
+		this.dds = null;
+		this.objects = null; // always up to date view model
+
 		this.requiredKeys = options.requiredKeys;
 		this.sorter = options.sort || function(array) {
 			return array.reverse();
