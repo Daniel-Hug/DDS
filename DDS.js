@@ -32,7 +32,7 @@
 	Obj.extend({
 		whenever: function(event, fn) {
 			if (event === 'add' || event === 'any') {
-				for (var _id in this.objects) fn(event, this.objects[_id]);
+				for (var i = 0, l = this.objects.length; i < l; i++) fn(event, this.objects[i]);
 			}
 			this.on(event, fn);
 		},
