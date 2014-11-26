@@ -1,4 +1,4 @@
-/*global DDS, Firebase */
+/*global DDS */
 (function() {
 	'use strict';
 
@@ -8,33 +8,25 @@
 		Set up tasks data with localStorage
 	*/
 
-	var tasks = window.tasks = new DDS(storage.get('tasks') || []);
+	var tasks = window.tasks = new DDS(storage.get('tasks') || [
+		{done: false, title: 'Mark \'em off one by one.'},
+		{done: false, title: 'Print them off.'},
+		{done: false, title: 'Add tasks to your ToDo list.'}
+	]);
 
 	tasks.on('any', function() {
 		storage.set('tasks', tasks.objects);
 	});
 
-	// Add some default tasks if none exist:
-	if (!tasks.objects.length) {
-		[
-			{done: false, title: 'Mark \'em off one by one.'},
-			{done: false, title: 'Print them off.'},
-			{done: false, title: 'Add tasks to your ToDo list.'}
-		].forEach(tasks.add, tasks);
-	}
 
 
 	/*
-		Setup todo list view
+		render task function
+		returns an <li> containing all the DOM for a task
+		also acts as the control (sets up all the necessary event listeners)
 	*/
 
-	var parent = qs('.app');
-	var newTaskForm = qs(':scope .new-task-form', parent);
-	var taskNameField = qs(':scope .task-name-field', parent);
-	var taskList = qs(':scope .task-list', parent);
-
 	function renderTask(taskObj) {
-		// Create elements:
 		var li = DOM.buildNode({ el: 'li', kid:
 			{ el: 'label', kids: [
 				{ el: 'input', type: 'checkbox', _className: 'visuallyhidden', _checked: taskObj.done, on_change: function() {
@@ -61,15 +53,25 @@
 	}
 
 
+
+	/*
+		Render task list view
+	*/
+
 	var taskListView = tasks.render(new DDS.DOMView({
 		renderer: renderTask,
-		parent: taskList,
+		parent: qs('.task-list'),
 		requiredKeys: ['done', 'title']
 	}));
 
 
-	// add task
-	on(newTaskForm, 'submit', instead(function() {
+
+	/*
+		handle new task submission
+	*/
+
+	var taskNameField = qs('.task-name-field');
+	on(qs('.new-task-form'), 'submit', instead(function() {
 		tasks.add({done: false, title: taskNameField.value});
 		taskNameField.value = '';
 	}));
