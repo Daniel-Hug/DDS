@@ -1,13 +1,13 @@
 /*global define */
 (function (root, factory) {
 	'use strict';
-    if (typeof define === 'function' && define.amd) {
-        // AMD. Register as an anonymous module.
-        define(['object-subscribe', 'subscribable.js'], factory);
-    } else {
-        // Browser globals
-        root.DDS = factory(root.Obj, root.Subscribable);
-    }
+	if (typeof define === 'function' && define.amd) {
+		// AMD. Register as an anonymous module.
+		define(['object-subscribe', 'subscribable.js'], factory);
+	} else {
+		// Browser globals
+		root.DDS = factory(root.Obj, root.Subscribable);
+	}
 })(this, function(Obj, Subscribable) {
 	'use strict';
 
