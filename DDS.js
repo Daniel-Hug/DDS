@@ -57,14 +57,14 @@
 			}
 		},
 
-		edit: function(obj, changes, DDSRendererNotToUpdate) {
+		edit: function(obj, changes, DDSViewNotToUpdate) {
 			var oldObj = Obj.extend(obj);
 			obj._lastEdit = Date.now();
 			Obj.set(obj, changes);
 
 			// Notify subscribers:
 			var operation = obj._isDeleted ? 'remove' : (oldObj._isDeleted ? 'add' : 'edit');
-			this.trigger(operation, obj, oldObj, DDSRendererNotToUpdate);
+			this.trigger(operation, obj, oldObj, DDSViewNotToUpdate);
 		},
 
 		remove: function(obj) {
