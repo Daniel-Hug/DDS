@@ -94,7 +94,7 @@
 		}
 	};
 
-	var filterBtns = qsa(':scope .filter-btns button', parent);
+	var filterBtns = qsa('.filter-btns button');
 	[].forEach.call(filterBtns, function(btn) {
 		on(btn, 'click', function() {
 			[].forEach.call(filterBtns, function(btn) {
@@ -124,7 +124,7 @@
 		}
 	};
 
-	var sortBtns = qsa(':scope .sort-btns button', parent);
+	var sortBtns = qsa('.sort-btns button');
 	[].forEach.call(sortBtns, function(btn) {
 		on(btn, 'click', function() {
 			[].forEach.call(sortBtns, function(btn) {

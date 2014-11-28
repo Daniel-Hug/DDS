@@ -23,6 +23,7 @@
 	}
 
 	// Bind an array of objects to the DOM:
+	// var model = new DDS(arrayOfObjects);
 	var DDS = function(objects) {
 		this.subscribers = {};
 		this.objects = [];
