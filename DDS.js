@@ -20,7 +20,7 @@
 		parent.insertBefore(newChild, nextSibling);
 	}
 
-	// Bind an array of Data objects to the DOM:
+	// Bind an array of objects to the DOM:
 	var DDS = function(objects) {
 		this.subscribers = {};
 		this.objects = [];
@@ -37,15 +37,21 @@
 			this.on(event, fn);
 		},
 
+		// 1. prep passed object with an _id and _ts
+		// 2. add it to this.objects
+		// 3. notify subscribers/views
 		add: function(obj) {
+			// 1
 			if (obj._id === undefined) {
 				obj._id = uid();
 			}
 			else if ( this.find({_id: obj._id}) ) return;
 			if (obj._ts === undefined) obj._ts = Date.now();
+
+			// 2
 			this.objects.push(obj);
 
-			// Notify subscribers:
+			// 3
 			if (!obj._isDeleted) {
 				this.trigger('add', obj);
 			}
