@@ -12,7 +12,9 @@
 	'use strict';
 
 	function uid() {
-		return (+(Math.random() + '00').slice(2)).toString(36);
+		return (
+			(+(Math.random() + '00').slice(2)).toString(36) + '_' +
+			(+(Math.random() + '00').slice(2)).toString(36));
 	}
 
 	function appendAtIndex(parent, newChild, index) {
