@@ -27,10 +27,11 @@
 	var DDS = function(objects) {
 		this.subscribers = {};
 		this.objects = [];
+		this.objectsObj = {};
 
 		if (Obj.type(objects) === 'object') {
 			for (_id in objects) {
-				this.add(objects[_id]);
+				this.add(objects[_id], _id);
 			}
 		}
 		else (objects || []).forEach(this.add, this);
@@ -45,21 +46,23 @@
 			this.on(event, fn);
 		},
 
-		// 1. prep passed object with an _id and _ts
-		// 2. add it to this.objects
-		// 3. notify subscribers/views
-		add: function(obj) {
-			// 1
+		add: function(obj, _id) {
+			// prep passed object with an _id prop (each object gets a unique ID)
 			if (obj._id === undefined) {
-				obj._id = uid();
+				obj._id = _id || uid();
 			}
-			else if ( this.find({_id: obj._id}) ) return;
+
+			// ensure the passed object doesn't have a duplicate
+			if (this.objectsObj[obj._id]) return;
+
+			// prep passed object with an _ts prop (date created)
 			if (obj._ts === undefined) obj._ts = Date.now();
 
-			// 2
+			// add object to this.objects and this.objectsObj
 			this.objects.push(obj);
+			this.objectsObj[obj._id] = obj;
 
-			// 3
+			// notify subscribers/views
 			if (!obj._isDeleted) {
 				this.trigger('add', obj);
 			}
