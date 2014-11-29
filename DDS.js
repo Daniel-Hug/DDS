@@ -168,8 +168,7 @@
 			if (isEdit || action === 'remove') {
 				var shouldRemove = true;
 			}
-			if (isEdit || action === 'add') {
-				if (!this.filterer(newObj)) return;
+			if ((isEdit || action === 'add') && this.filterer(newObj)) {
 				var shouldAdd = true;
 			}
 
