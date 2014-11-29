@@ -28,7 +28,12 @@
 		this.subscribers = {};
 		this.objects = [];
 
-		(objects || []).forEach(this.add, this);
+		if (Obj.type(objects) === 'object') {
+			for (_id in objects) {
+				this.add(objects[_id]);
+			}
+		}
+		else (objects || []).forEach(this.add, this);
 	};
 
 	DDS.prototype = new Subscribable();
