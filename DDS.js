@@ -30,7 +30,7 @@
 		this.objectsObj = {};
 
 		if (Obj.type(objects) === 'object') {
-			for (_id in objects) {
+			for (var _id in objects) {
 				this.add(objects[_id], _id);
 			}
 		}
