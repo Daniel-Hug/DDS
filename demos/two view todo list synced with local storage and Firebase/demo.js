@@ -3,42 +3,6 @@
 	'use strict';
 
 
-	/*
-		Helper functions
-	*/
-
-	// Get elements by CSS selector:
-	function qs(selector, scope) {
-		return (scope || document).querySelector(selector);
-	}
-	function qsa(selector, scope) {
-		return (scope || document).querySelectorAll(selector);
-	}
-
-	function on(target, type, callback) {
-		target.addEventListener(type, callback, false);
-	}
-
-	// localStorage wrapper:
-	var storage = {
-		get: function(prop) {
-			return JSON.parse(localStorage.getItem(prop));
-		},
-		set: function(prop, val) {
-			localStorage.setItem(prop, JSON.stringify(val));
-		},
-		has: function(prop) {
-			return localStorage.hasOwnProperty(prop);
-		},
-		remove: function(prop) {
-			localStorage.removeItem(prop);
-		},
-		clear: function() {
-			localStorage.clear();
-		}
-	};
-
-
 
 	/*
 		Set up tasks data with localStorage
@@ -113,55 +77,32 @@
 		var taskNameField = qs(':scope .task-name-field', parent);
 		var taskList = qs(':scope .task-list', parent);
 
+		/*
+			returns an <li> containing all the DOM for a task
+			also acts as the control (sets up all the necessary event listeners)
+		*/
 		function renderTask(taskObj) {
-			// Create elements:
-			var li = document.createElement('li');
-			var checkbox = document.createElement('input');
-			var label = document.createElement('label');
-			var checkboxDiv = document.createElement('div');
-			var deleteBtn = document.createElement('button');
-			var titleWrap = document.createElement('div');
-			var title = document.createElement('div');
-			checkbox.className = 'visuallyhidden';
-			checkboxDiv.className = 'checkbox';
-			deleteBtn.className = 'icon-trash';
-			titleWrap.className = 'title';
-
-			// Add data:
-			checkbox.type = 'checkbox';
-			if (taskObj.done) checkbox.checked = true;
-			title.textContent = taskObj.title;
-
-			// Append children to li:
-			titleWrap.appendChild(title);
-			label.appendChild(checkbox);
-			label.appendChild(checkboxDiv);
-			label.appendChild(deleteBtn);
-			label.appendChild(titleWrap);
-			li.appendChild(label);
-
-			// Allow changes to ToDo title:
-			title.contentEditable = true;
-			on(title, 'input', function() {
-				taskListView.edit(taskObj, {title: this.textContent});
+			var li = DOM.buildNode({ el: 'li', kid:
+				{ el: 'label', kids: [
+					{ el: 'input', type: 'checkbox', _className: 'visuallyhidden', _checked: taskObj.done, on_change: function() {
+						tasks.edit(taskObj, {done: this.checked});
+					} },
+					{ _className: 'checkbox' },
+					{ el: 'button', _className: 'icon-trash', on_click: [stopEvent, function() {
+						tasks.remove(taskObj);
+					}] },
+					{ _className: 'title', on_click: stopEvent, kid:
+						{ _contentEditable: true, kid: taskObj.title, on_input: function() {
+							taskListView.edit(taskObj, {title: this.textContent});
+						} }
+					}
+				] }
 			});
 
-			// Don't toggle checkbox when todo title or delete button is clicked:
-			[titleWrap, deleteBtn].forEach(function(el) {
-				on(el, 'click', function(event) {
-					event.preventDefault();
-					event.stopPropagation();
-				});
-			});
-
-			on(deleteBtn, 'click', function() {
-				window.tasks.remove(taskObj);
-			});
-
-			// Let ToDos be checked off:
-			on(checkbox, 'change', function() {
-				window.tasks.edit(taskObj, {done: this.checked});
-			});
+			function stopEvent(event) {
+				event.preventDefault();
+				event.stopPropagation();
+			}
 
 			return li;
 		}
@@ -175,11 +116,10 @@
 
 
 		// add task
-		on(newTaskForm, 'submit', function(event) {
-			event.preventDefault();
+		on(newTaskForm, 'submit', instead(function() {
 			window.tasks.add({done: false, title: taskNameField.value});
 			taskNameField.value = '';
-		});
+		}));
 
 
 
