@@ -49,7 +49,7 @@
 		add: function(obj, _id) {
 			// prep passed object with an _id prop (each object gets a unique ID)
 			if (typeof obj._id !== 'string') {
-				obj._id = _id || uid();
+				obj._id = typeof _id === 'string' ? _id : uid();
 			}
 
 			// ensure the passed object doesn't have a duplicate
