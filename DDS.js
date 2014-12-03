@@ -191,7 +191,7 @@
 		},
 
 		filter: function(fn) {
-			this.filterer = fn;
+			if (fn) this.filterer = fn;
 
 			if (this.add && this.remove) {
 				// grab new view model:
