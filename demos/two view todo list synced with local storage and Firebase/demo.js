@@ -154,12 +154,12 @@
 		var sorters = {
 			newFirst: function(array) {
 				return array.sort(function(objectA, objectB) {
-					return objectA._ts - objectB._ts;
+					return objectB._ts - objectA._ts; // descending
 				});
 			},
 			newLast: function(array) {
 				return array.sort(function(objectA, objectB) {
-					return objectB._ts - objectA._ts;
+					return objectA._ts - objectB._ts; // ascending
 				});
 			}
 		};
