@@ -1,4 +1,4 @@
-/*global DDS, Firebase */
+/*global DDS, Firebase, storage, qs, qsa, on, DOM, instead, stopEvent */
 (function() {
 	'use strict';
 
@@ -85,11 +85,11 @@
 			var li = DOM.buildNode({ el: 'li', kid:
 				{ el: 'label', kids: [
 					{ el: 'input', type: 'checkbox', _className: 'visuallyhidden', _checked: taskObj.done, on_change: function() {
-						tasks.edit(taskObj, {done: this.checked});
+						window.tasks.edit(taskObj, {done: this.checked});
 					} },
 					{ _className: 'checkbox' },
 					{ el: 'button', _className: 'icon-trash', on_click: [stopEvent, function() {
-						tasks.remove(taskObj);
+						window.tasks.remove(taskObj);
 					}] },
 					{ _className: 'title', on_click: stopEvent, kid:
 						{ _contentEditable: true, kid: taskObj.title, on_input: function() {
@@ -98,11 +98,6 @@
 					}
 				] }
 			});
-
-			function stopEvent(event) {
-				event.preventDefault();
-				event.stopPropagation();
-			}
 
 			return li;
 		}

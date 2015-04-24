@@ -1,4 +1,4 @@
-/*global DDS */
+/*global DDS, storage, DOM, qs, qsa, on, instead, stopEvent */
 (function() {
 	'use strict';
 
@@ -43,11 +43,6 @@
 				}
 			] }
 		});
-
-		function stopEvent(event) {
-			event.preventDefault();
-			event.stopPropagation();
-		}
 
 		return li;
 	}

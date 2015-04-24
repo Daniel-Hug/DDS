@@ -37,3 +37,9 @@ function instead(fn) {
 		fn.apply(this, arguments);
 	};
 }
+
+
+function stopEvent(event) {
+	event.preventDefault();
+	event.stopPropagation();
+}
